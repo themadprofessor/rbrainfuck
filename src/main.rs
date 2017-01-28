@@ -1,22 +1,31 @@
+#[macro_use]
+extern crate log;
+extern crate env_logger;
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::io;
 use std::env;
 use data::Mem;
 
 mod data;
 
 fn main() {
+    env_logger::init().expect("Failed to initialise logger!");
+
     let mut mem = Mem::new();
     let mut loop_buf = Vec::new();
     let mut in_loop = false;
     let mut skip = false;
+    debug!("Initialised memory");
 
-    let file = match File::open(env::args().nth(1).expect("No file specfied!")) {
-        Ok(f) => f,
-        Err(err) => panic!("Failed to open file! {}", err),
+    let reader = if let Some(path) = env::args().nth(1) {
+        BufReader::new(File::open(path).expect("Failed to read file!"))
+    } else {
+        BufReader::new(io::stdin().lock())
     };
-    let reader = BufReader::new(file);
+    debug!("Opened file successfully");
 
     for l in reader.lines() {
         for char in l.unwrap().chars() {
