@@ -22,18 +22,6 @@ macro_rules! is_one {
     }}
 }
 
-/*
-macro_rules! is_intern {
-    ($i: ident, $next: expr, $($next:expr),+) => {{
-        $i == $next || is_intern!($i, $next)
-    }};
-
-    ($i: ident, $last: expr) => {{
-        $i == $last
-    }}
-}
-*/
-
 #[cfg(test)]
 mod tests {
     use test;

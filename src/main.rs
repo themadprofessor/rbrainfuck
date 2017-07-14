@@ -7,6 +7,7 @@ extern crate test;
 
 use std::env;
 use std::fs::File;
+use std::io;
 use std::io::{BufReader, Write};
 
 #[macro_use]
@@ -14,26 +15,26 @@ mod macros;
 mod error;
 mod ast;
 mod machine;
+mod input;
 
-use error::*;
 
 fn main() {
-    /*let read = if let Some(path) = env::args().nth(1) {
+    let read = BufReader::new(if let Some(path) = env::args().nth(1) {
             match File::open(path) {
-                Ok(read) => BufReader::new(read),
-                Err(err) => exit(exit_code::DATA_ERROR, string_build!("Failed to open file! ", &err.to_string()))
+                Ok(read) => input::Input::File(read),
+                Err(err) => exit(exit_code::DATA_ERROR, &string_build!("Failed to open file! ", &err.to_string()))
             }
         } else {
-            BufReader::new(std::io::stdin().lock())
-        };*/
-    let read = match env::args()
+            input::Input::Stdin(io::stdin())
+        });
+    /*let read = match env::args()
         .nth(1)
         .ok_or_else(|| ErrorKind::NoPathGivenError)
         .and_then(|path| File::open(path).map_err(ErrorKind::IoError))
         .map(BufReader::new) {
         Ok(r) => r,
         Err(err) => exit(exit_code::IO_ERROR, &string_build!("Failed to open file! ", &err.to_string()))
-    };
+    };*/
 
     let ast = match ast::from_read(read) {
         Ok(a) => a,
@@ -41,6 +42,7 @@ fn main() {
     };
     let mut machine = machine::Machine::new();
     let exec_res = machine.exec_ast(&ast);
+    println!();
     if exec_res.is_err() {
         let err = exec_res.unwrap_err();
         exit(exit_code::IO_ERROR, &string_build!("Failed to read from stdin! ", &err.to_string()))
