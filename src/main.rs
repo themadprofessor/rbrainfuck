@@ -42,7 +42,6 @@ fn main() {
     };
     let mut machine = machine::Machine::new();
     let exec_res = machine.exec_ast(&ast);
-    println!();
     if exec_res.is_err() {
         let err = exec_res.unwrap_err();
         exit(exit_code::IO_ERROR, &string_build!("Failed to read from stdin! ", &err.to_string()))
