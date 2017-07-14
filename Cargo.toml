@@ -4,5 +4,6 @@ version = "0.1.0"
 authors = ["Stuart Reilly <stu@reilly-family.co.uk>"]
 
 [dependencies]
-log = "0.3"
-env_logger = "0.3"
+exit-code = "1"
+error-chain = "*"
+nom = "3.1"

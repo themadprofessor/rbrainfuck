@@ -1,87 +1,56 @@
-#[macro_use]
-extern crate log;
-extern crate env_logger;
+#![feature(test)]
 
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::io;
+#[macro_use] extern crate error_chain;
+#[macro_use] extern crate nom;
+extern crate exit_code;
+extern crate test;
+
 use std::env;
-use data::Mem;
+use std::fs::File;
+use std::io::{BufReader, Write};
 
-mod data;
+#[macro_use]
+mod macros;
+mod error;
+mod ast;
+mod machine;
+
+use error::*;
 
 fn main() {
-    env_logger::init().expect("Failed to initialise logger!");
-
-    let mut mem = Mem::new();
-    let mut loop_buf = Vec::new();
-    let mut in_loop = false;
-    let mut skip = false;
-    debug!("Initialised memory");
-
-    let reader = if let Some(path) = env::args().nth(1) {
-        BufReader::new(File::open(path).expect("Failed to read file!"))
-    } else {
-        BufReader::new(io::stdin().lock())
+    /*let read = if let Some(path) = env::args().nth(1) {
+            match File::open(path) {
+                Ok(read) => BufReader::new(read),
+                Err(err) => exit(exit_code::DATA_ERROR, string_build!("Failed to open file! ", &err.to_string()))
+            }
+        } else {
+            BufReader::new(std::io::stdin().lock())
+        };*/
+    let read = match env::args()
+        .nth(1)
+        .ok_or_else(|| ErrorKind::NoPathGivenError)
+        .and_then(|path| File::open(path).map_err(ErrorKind::IoError))
+        .map(BufReader::new) {
+        Ok(r) => r,
+        Err(err) => exit(exit_code::IO_ERROR, &string_build!("Failed to open file! ", &err.to_string()))
     };
-    debug!("Opened file successfully");
 
-    for l in reader.lines() {
-        for char in l.unwrap().chars() {
-            if skip == true && char != ']' {
-                continue;
-            } else {
-                skip = false;
-            }
-            match char {
-                ']' => {
-                    in_loop = false;
-                    loop {
-                        if mem.get_curr() == 0 {
-                            break;
-                        }
-                        for c in &loop_buf {
-                            exec(&mut mem, &c);
-                        }
-                    }
-                    loop_buf.clear();
-                },
-                '[' => {
-                    if mem.get_curr() == 0 {
-                        skip = true;
-                    } else {
-                        in_loop = true;
-                    }
-                },
-                '>' | '<' | '+' | '-' | '.' | ',' => {
-                    if in_loop {
-                        loop_buf.push(char);
-                    } else {
-                        exec(&mut mem, &char);
-                    }
-                },
-                _ => {}
-            }
-        }
-    }
-    println!("");
-}
-
-fn exec(mem: &mut Mem, char: &char) {
-    if *char == '>' {
-        mem.mv_right();
-    } else if *char == '<' {
-        mem.mv_left();
-    } else if *char == '+' {
-        mem.inc_curr();
-    } else if *char == '-' {
-        mem.dec_curr();
-    } else if *char == '.' {
-        print!("{}", mem.get_curr() as char)
-    } else if *char == ',' {
-        let mut buff = [0; 1];
-        std::io::stdin().read_exact(&mut buff).unwrap();
-        mem.put_curr(buff[0]);
+    let ast = match ast::from_read(read) {
+        Ok(a) => a,
+        Err(err) => exit(exit_code::DATA_ERROR, &string_build!("Failed to parse file! ", &err.to_string()))
+    };
+    let mut machine = machine::Machine::new();
+    let exec_res = machine.exec_ast(&ast);
+    if exec_res.is_err() {
+        let err = exec_res.unwrap_err();
+        exit(exit_code::IO_ERROR, &string_build!("Failed to read from stdin! ", &err.to_string()))
     }
 }
+
+fn exit<T>(code: i32, msg: &T) -> ! where T: std::fmt::Display {
+    if writeln!(std::io::stderr(), "{}", msg).is_err() {
+        println!("Failed to print to stderr! {}", msg);
+    }
+    std::process::exit(code)
+}
+
