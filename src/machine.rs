@@ -78,3 +78,40 @@ impl Default for Machine {
         Machine::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup(ast: &[Node]) -> Result<Machine> {
+        let mut machine = Machine::new();
+        machine.exec_ast(ast).map(|_| machine)
+    }
+
+    #[test]
+    fn empty() {
+        let res = setup(&vec![]);
+        assert!(res.is_ok());
+        let machine = res.unwrap();
+        assert_eq!(machine.data, vec![0]);
+        assert_eq!(machine.ptr, 0);
+    }
+
+    #[test]
+    fn move_right() {
+        let res = setup(&vec![Node::MoveRight]);
+        assert!(res.is_ok());
+        let machine = res.unwrap();
+        assert_eq!(machine.ptr, 1);
+        assert_eq!(machine.data, vec![0, 0]);
+    }
+
+    #[test]
+    fn move_left() {
+        let res = setup(&vec![Node::MoveLeft]);
+        assert!(res.is_ok());
+        let machine = res.unwrap();
+        assert_eq!(machine.ptr, 0);
+        assert_eq!(machine.data, vec![0]);
+    }
+}

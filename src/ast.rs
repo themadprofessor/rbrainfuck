@@ -40,13 +40,6 @@ named!(lop<Node>, do_parse!(
 ));
 
 named!(parse_node<Node>, alt!(call!(mov_r) | call!(mov_l) | call!(dec) | call!(inc) | call!(read) | call!(print) | call!(lop)));
-//named!(parse<Vec<Node>>, flat_map!(take_while!(is_valid), many0!(call!(parse_node))));
-//named!(parse<Vec<Node>>, map!(many0!(flat_map!(take_while!(is_valid), many0!(call!(parse_node)))), flatten));
-/*named!(parse<Vec<Node>>, map!(many0!(do_parse!(
-    res: flat_map!(is_a!(",.<>[]-+"), many0!(call!(parse_node))) >>
-    is_not!(",.<>[]-+") >>
-    (res)
-)), flatten));*/
 named!(parse<Vec<Node>>, many0!(call!(parse_node)));
 
 fn is_valid(c: &u8) -> bool {
@@ -59,10 +52,4 @@ fn flatten<T>(data: Vec<Vec<T>>) -> Vec<T> {
         vec.extend(sub.into_iter());
     }
     vec
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
 }

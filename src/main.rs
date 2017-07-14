@@ -27,14 +27,6 @@ fn main() {
         } else {
             input::Input::Stdin(io::stdin())
         });
-    /*let read = match env::args()
-        .nth(1)
-        .ok_or_else(|| ErrorKind::NoPathGivenError)
-        .and_then(|path| File::open(path).map_err(ErrorKind::IoError))
-        .map(BufReader::new) {
-        Ok(r) => r,
-        Err(err) => exit(exit_code::IO_ERROR, &string_build!("Failed to open file! ", &err.to_string()))
-    };*/
 
     let ast = match ast::from_read(read) {
         Ok(a) => a,
